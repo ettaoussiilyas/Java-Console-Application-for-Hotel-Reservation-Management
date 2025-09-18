@@ -48,12 +48,27 @@ public class MainMenu {
         MenuHandler.showPrompt("Mot de passe (min 6 caractères)");
         String password = scanner.nextLine();
 
+        MenuHandler.showRoleSelection();
+        String roleChoise = scanner.nextLine();
+        String role = null;
+
+        switch (roleChoise) {
+            case "1":
+                role = "CLIENT";
+                break;
+            case "2":
+                role = "ADMIN";
+                break;
+            default:
+                MenuHandler.showError("Choix invalide");
+        }
+
         // Validation
         if (!validateRegistrationInput(nom, prenom, email, password)) {
             return;
         }
 
-        if (authService.register(nom + " " + prenom, email, password, "CLIENT")) {
+        if (authService.register(nom + " " + prenom, email, password, role)) {
             MenuHandler.showSuccess("Inscription réussie!");
         } else {
             MenuHandler.showError("Email déjà utilisé ou invalide");

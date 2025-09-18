@@ -62,14 +62,21 @@ public class MenuHandler {
     }
 
     public static void showError(String message) {
-        System.out.println("\n❌ Erreur: " + message);
+        System.out.println("\nErreur: " + message);
     }
 
     public static void showSuccess(String message) {
-        System.out.println("\n✓ " + message);
+        System.out.println("\nSuccess" + message);
     }
 
     public static void showPrompt(String message) {
         System.out.print(message + ": ");
+    }
+
+    public static void showRoleSelection(){
+        System.out.println("\nChoisissez votre role: ");
+        System.out.println("1. Client");
+        System.out.println("2. Admin");
+        System.out.print("Votre choix (1 ou 2): ");
     }
 }
