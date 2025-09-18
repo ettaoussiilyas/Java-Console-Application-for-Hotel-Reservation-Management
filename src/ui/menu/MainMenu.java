@@ -113,10 +113,78 @@ public class MainMenu {
     private void handleUserMenu() {
         boolean userMenuRunning = true;
         while (userMenuRunning && running) {
-            boolean isAdmin = "ADMIN".equals(currentUser.getRole());
-            MenuHandler.showUserMenu(currentUser.getUsername(), isAdmin);
-            userMenuRunning = handleUserChoice(isAdmin);
+            if ("ADMIN".equals(currentUser.getRole())) {
+                MenuHandler.showAdminMenu(currentUser.getUsername());
+                userMenuRunning = handleAdminMenu();
+            } else {
+                MenuHandler.showClientMenu(currentUser.getUsername());
+                userMenuRunning = handleClientMenu();
+            }
         }
+    }
+
+    private boolean handleAdminMenu() {
+        String choice = scanner.nextLine();
+        switch (choice) {
+            case "1" -> handleCreateHotel();
+            case "2" -> handleUpdateHotel();
+            case "3" -> handleDeleteHotel();
+            case "4" -> handleListHotels();
+            case "5" -> handleViewAllReservations();
+            case "6" -> handleManageReservations();
+            case "7" -> handleUpdateProfile();
+            case "8" -> handleChangePassword();
+            case "9" -> {
+                handleLogout();
+                return false;
+            }
+            default -> {
+                MenuHandler.showError("Option invalide");
+                waitForEnter();
+            }
+        }
+        return true;
+    }
+
+    private boolean handleClientMenu() {
+        String choice = scanner.nextLine();
+        switch (choice) {
+            case "1" -> handleListAvailableHotels();
+            case "2" -> handleCreateReservation();
+            case "3" -> handleCancelReservation();
+            case "4" -> handleReservationHistory();
+            case "5" -> handleUpdateProfile();
+            case "6" -> handleChangePassword();
+            case "7" -> {
+                handleLogout();
+                return false;
+            }
+            default -> {
+                MenuHandler.showError("Option invalide");
+                waitForEnter();
+            }
+        }
+        return true;
+    }
+
+    // New methods for admin-specific functionality
+    private void handleViewAllReservations() {
+        System.out.println("\n=== Toutes les réservations ===");
+        // TODO: Implement viewing all reservations (admin only)
+        waitForEnter();
+    }
+
+    private void handleManageReservations() {
+        System.out.println("\n=== Gestion des réservations ===");
+        // TODO: Implement reservation management (admin only)
+        waitForEnter();
+    }
+
+    // Updated method for client-specific functionality
+    private void handleListAvailableHotels() {
+        System.out.println("\n=== Hôtels disponibles ===");
+        // TODO: Implement listing only available hotels with room count > 0
+        waitForEnter();
     }
 
     private boolean handleUserChoice(boolean isAdmin) {
