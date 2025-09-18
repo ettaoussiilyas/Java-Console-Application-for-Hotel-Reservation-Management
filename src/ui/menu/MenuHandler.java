@@ -4,7 +4,7 @@ public class MenuHandler {
     private static final String MENU_BORDER = "====================================";
     private static final String DOUBLE_BORDER = "====================================================";
 
-    // Menu principal (non connecté)
+    // Welcome Menu (not logged in)
     public static void showWelcomeMenu() {
         clearScreen();
         System.out.println(DOUBLE_BORDER);
@@ -17,26 +17,43 @@ public class MenuHandler {
         System.out.print("Votre choix: ");
     }
 
-    // Menu utilisateur connecté
-    public static void showUserMenu(String username, boolean isAdmin) {
+    // Admin Menu
+    public static void showAdminMenu(String username) {
         clearScreen();
+        System.out.println(DOUBLE_BORDER);
+        System.out.println("    MENU ADMINISTRATEUR - Connecté en tant que: " + username);
+        System.out.println(DOUBLE_BORDER);
+        System.out.println("\n=== Gestion des Hôtels ===");
+        System.out.println("1. Créer un hôtel");
+        System.out.println("2. Modifier un hôtel");
+        System.out.println("3. Supprimer un hôtel");
+        System.out.println("4. Liste des hôtels");
+        System.out.println("\n=== Réservations ===");
+        System.out.println("5. Consulter toutes les réservations");
+        System.out.println("6. Gérer les réservations");
+        System.out.println("\n=== Compte ===");
+        System.out.println("7. Modifier profil");
+        System.out.println("8. Changer mot de passe");
+        System.out.println("9. Se déconnecter");
         System.out.println(MENU_BORDER);
-        System.out.println("Logged in as: " + username);
-        System.out.println(MENU_BORDER);
+        System.out.print("Votre choix: ");
+    }
 
-        if (isAdmin) {
-            System.out.println("1. Créer un hôtel");
-            System.out.println("2. Modifier un hôtel");
-            System.out.println("3. Supprimer un hôtel");
-        }
-
-        System.out.println(isAdmin ? "4" : "1" + ". Liste des hôtels");
-        System.out.println(isAdmin ? "5" : "2" + ". Réserver une chambre");
-        System.out.println(isAdmin ? "6" : "3" + ". Annuler une réservation");
-        System.out.println(isAdmin ? "7" : "4" + ". Historique des réservations");
-        System.out.println(isAdmin ? "8" : "5" + ". Modifier profil");
-        System.out.println(isAdmin ? "9" : "6" + ". Changer mot de passe");
-        System.out.println(isAdmin ? "10" : "7" + ". Se déconnecter");
+    // Client Menu
+    public static void showClientMenu(String username) {
+        clearScreen();
+        System.out.println(DOUBLE_BORDER);
+        System.out.println("    MENU CLIENT - Connecté en tant que: " + username);
+        System.out.println(DOUBLE_BORDER);
+        System.out.println("\n=== Réservations ===");
+        System.out.println("1. Liste des hôtels disponibles");
+        System.out.println("2. Réserver une chambre");
+        System.out.println("3. Annuler une réservation");
+        System.out.println("4. Mon historique de réservations");
+        System.out.println("\n=== Compte ===");
+        System.out.println("5. Modifier mon profil");
+        System.out.println("6. Changer mot de passe");
+        System.out.println("7. Se déconnecter");
         System.out.println(MENU_BORDER);
         System.out.print("Votre choix: ");
     }
