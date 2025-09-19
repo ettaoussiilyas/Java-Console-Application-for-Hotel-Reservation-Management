@@ -1,8 +1,16 @@
 package ui.menu;
 
 public class MenuHandler {
-    private static final String MENU_BORDER = "====================================";
-    private static final String DOUBLE_BORDER = "====================================================";
+    public static void showHotelFormHeader(String title) {
+        clearScreen();
+        System.out.println(DOUBLE_BORDER);
+        System.out.println("           " + title);
+        System.out.println(DOUBLE_BORDER);
+    }
+
+    // Add this constant at the top of the class
+    public static final String MENU_BORDER = "====================================";
+    public static final String DOUBLE_BORDER = "====================================================";
 
     // Welcome Menu (not logged in)
     public static void showWelcomeMenu() {
