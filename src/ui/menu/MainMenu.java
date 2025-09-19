@@ -1,16 +1,20 @@
 package ui.menu;
 
-import service.AuthService;
-import entity.User;
 import java.util.Scanner;
-import service.HotelService;
-import entity.Hotel;
 import java.util.List;
+import entity.User;
+import entity.Hotel;
+import entity.Reservation;
+import service.HotelService;
+import service.AuthService;
+import service.ReservationService;
+import java.util.UUID;
 
 public class MainMenu {
     private final Scanner scanner;
     private final AuthService authService;
     private final HotelService hotelService;
+    private final ReservationService reservationService;
     private boolean running;
     private User currentUser;
 
@@ -18,6 +22,7 @@ public class MainMenu {
         this.scanner = new Scanner(System.in);
         this.authService = new AuthService();
         this.hotelService = new HotelService();
+        this.reservationService = new ReservationService();
         this.running = true;
     }
 
@@ -175,7 +180,8 @@ public class MainMenu {
     // New methods for admin-specific functionality
     private void handleViewAllReservations() {
         System.out.println("\n=== Toutes les réservations ===");
-        // TODO: Implement viewing all reservations (admin only)
+
+
         waitForEnter();
     }
 
@@ -419,29 +425,195 @@ private void handleListHotels() {
     }
 
     private void handleCreateReservation() {
-        System.out.println("Création de réservation - À implémenter");
+    MenuHandler.showHotelFormHeader("CRÉER UNE RÉSERVATION");
+    
+    // Show available hotels
+    List<Hotel> availableHotels = hotelService.getAvailableHotels(1);
+    if (availableHotels.isEmpty()) {
+        MenuHandler.showError("Aucun hôtel disponible actuellement");
         waitForEnter();
+        return;
     }
+    
+    displayHotelsList(availableHotels);
+    
+    MenuHandler.showPrompt("ID de l'hôtel choisi");
+    String hotelId = scanner.nextLine();
+    
+    Hotel hotel = hotelService.getHotelById(hotelId);
+    if (hotel == null || hotel.getAvailableRooms() < 1) {
+        MenuHandler.showError("Hôtel non disponible");
+        waitForEnter();
+        return;
+    }
+    
+    try {
+        MenuHandler.showPrompt("Nombre de chambres");
+        int numberOfRooms = Integer.parseInt(scanner.nextLine());
+        
+        if (numberOfRooms > hotel.getAvailableRooms()) {
+            MenuHandler.showError("Nombre de chambres non disponible");
+            return;
+        }
+        
+        MenuHandler.showPrompt("Date d'arrivée (YYYY-MM-DD)");
+        String checkInDate = scanner.nextLine();
+        
+        MenuHandler.showPrompt("Date de départ (YYYY-MM-DD)");
+        String checkOutDate = scanner.nextLine();
+        
+        double totalPrice = hotel.getPrice() * numberOfRooms;
+        
+        Reservation newReservation = reservationService.createReservation(
+            UUID.randomUUID().toString(),
+            hotelId,
+            String.valueOf(currentUser.getId()),
+            checkInDate,
+            checkOutDate,
+            numberOfRooms,
+            totalPrice,
+            "Confirmed"
+        );
+        
+        if (newReservation != null) {
+            hotelService.updateRoomAvailability(hotelId, -numberOfRooms);
+            MenuHandler.showSuccess(" Réservation créée avec succès!");
+        } else {
+            MenuHandler.showError("Impossible de créer la réservation");
+        }
+    } catch (NumberFormatException e) {
+        MenuHandler.showError("Format de nombre invalide");
+    }
+    waitForEnter();
+}
 
-    private void handleCancelReservation() {
-        System.out.println("Annulation de réservation - À implémenter");
+private void handleCancelReservation() {
+    MenuHandler.showHotelFormHeader("ANNULER UNE RÉSERVATION");
+    
+    List<Reservation> userReservations = reservationService.getReservationsByCustomerId(
+        String.valueOf(currentUser.getId())
+    );
+    
+    if (userReservations.isEmpty()) {
+        MenuHandler.showError("Vous n'avez aucune réservation active");
         waitForEnter();
+        return;
     }
+    
+    displayReservationsList(userReservations);
+    
+    MenuHandler.showPrompt("ID de la réservation à annuler");
+    String reservationId = scanner.nextLine();
+    
+    // Use the new findById method from ReservationService
+    Reservation reservation = reservationService.findById(reservationId);
+    if (reservation == null || !reservation.getCustomerId().equals(String.valueOf(currentUser.getId()))) {
+        MenuHandler.showError("Réservation non trouvée ou non autorisée");
+        waitForEnter();
+        return;
+    }
+    
+    if (reservationService.cancelReservation(reservationId)) {
+        hotelService.updateRoomAvailability(reservation.getHotelId(), reservation.getNumberOfRooms());
+        MenuHandler.showSuccess(" Réservation annulée avec succès!");
+    } else {
+        MenuHandler.showError("Impossible d'annuler la réservation");
+    }
+    waitForEnter();
+}
 
     private void handleReservationHistory() {
-        System.out.println("Historique des réservations - À implémenter");
-        waitForEnter();
+    MenuHandler.showHotelFormHeader("HISTORIQUE DES RÉSERVATIONS");
+    
+    List<Reservation> reservations;
+    if ("ADMIN".equals(currentUser.getRole())) {
+        reservations = reservationService.getAllRservations();
+    } else {
+        reservations = reservationService.getReservationsByCustomerId(
+            String.valueOf(currentUser.getId())
+        );
     }
+    
+    if (reservations.isEmpty()) {
+        System.out.println("\nAucune réservation trouvée.");
+        waitForEnter();
+        return;
+    }
+    
+    displayReservationsList(reservations);
+    waitForEnter();
+}
+
+private void displayReservationsList(List<Reservation> reservations) {
+    System.out.printf("\n%-36s | %-20s | %-10s | %-10s | %-6s | %-10s | %s%n",
+            "ID", "HOTEL", "CHECK-IN", "CHECK-OUT", "CHAMBRES", "PRIX", "STATUT");
+    System.out.println("-".repeat(120));
+    
+    for (Reservation res : reservations) {
+        Hotel hotel = hotelService.getHotelById(res.getHotelId());
+        String hotelName = hotel != null ? hotel.getName() : "N/A";
+        
+        System.out.printf("%-36s | %-20s | %-10s | %-10s | %8d | %8.2f€ | %s%n",
+                res.getReservationId(),
+                hotelName,
+                res.getCheckInDate(),
+                res.getCheckOutDate(),
+                res.getNumberOfRooms(),
+                res.getTotalPrice(),
+                res.getReservationStatus());
+    }
+    System.out.println();
+}
 
     private void handleUpdateProfile() {
-        System.out.println("Modification du profil - À implémenter");
-        waitForEnter();
+    MenuHandler.showHotelFormHeader("MODIFIER MON PROFIL");
+    
+    MenuHandler.showPrompt("Nouveau nom d'utilisateur (ou Entrée pour garder l'ancien)");
+    String newUsername = scanner.nextLine();
+    
+    MenuHandler.showPrompt("Nouvel email (ou Entrée pour garder l'ancien)");
+    String newEmail = scanner.nextLine();
+    
+    if (!newUsername.trim().isEmpty()) {
+        currentUser.setUsername(newUsername);
     }
+    
+    if (!newEmail.trim().isEmpty()) {
+        if (newEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            currentUser.setEmail(newEmail);
+            MenuHandler.showSuccess(" Profil mis à jour avec succès!");
+        } else {
+            MenuHandler.showError("Format d'email invalide");
+        }
+    }
+    waitForEnter();
+}
 
-    private void handleChangePassword() {
-        System.out.println("Changement de mot de passe - À implémenter");
+private void handleChangePassword() {
+    MenuHandler.showHotelFormHeader("CHANGER MOT DE PASSE");
+    
+    MenuHandler.showPrompt("Ancien mot de passe");
+    String oldPassword = scanner.nextLine();
+    
+    if (!oldPassword.equals(currentUser.getPassword())) {
+        MenuHandler.showError("Mot de passe incorrect");
         waitForEnter();
+        return;
     }
+    
+    MenuHandler.showPrompt("Nouveau mot de passe (min 6 caractères)");
+    String newPassword = scanner.nextLine();
+    
+    if (newPassword.length() < 6) {
+        MenuHandler.showError("Le mot de passe doit contenir au moins 6 caractères");
+        waitForEnter();
+        return;
+    }
+    
+    currentUser.setPassword(newPassword);
+    MenuHandler.showSuccess(" Mot de passe changé avec succès!");
+    waitForEnter();
+}
 
     private void handleLogout() {
         authService.logout(currentUser.getEmail());
