@@ -8,14 +8,14 @@ public interface HotelRepository {
     Hotel save(Hotel hotel);
     Hotel findById(String hotelId);
     List<Hotel> findAll();
-    List<Hotel> findByAvailableRooms(int rooms);
-    List<Hotel> findByRating(float rating);
     boolean delete(String hotelId);
-    boolean exists(String hotelId);
-    // Business logic operations
-    boolean hasActiveReservation(String hotelId);
-    boolean updateRoomCount(String hotelId, int change);
-    boolean updateHotelInfo(String hotelId, String name, String address);
-    boolean isNameUnique(String name);
-    int getAvailableRooms(String hotelId);
+    
+    List<Hotel> findByAvailableRoomsGreaterThanEqual(int rooms);
+    List<Hotel> findByRatingGreaterThanEqual(float rating);
+    Hotel findByName(String name);
+    boolean existsById(String hotelId);
+    boolean existsByName(String name);
+    
+    boolean updateAvailableRooms(String hotelId, int newCount);
+    boolean updateHotelDetails(String hotelId, Hotel updatedHotel);
 }
