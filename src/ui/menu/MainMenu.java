@@ -3,16 +3,21 @@ package ui.menu;
 import service.AuthService;
 import entity.User;
 import java.util.Scanner;
+import service.HotelService;
+import entity.Hotel;
+import java.util.List;
 
 public class MainMenu {
     private final Scanner scanner;
     private final AuthService authService;
+    private final HotelService hotelService;
     private boolean running;
     private User currentUser;
 
     public MainMenu() {
         this.scanner = new Scanner(System.in);
         this.authService = new AuthService();
+        this.hotelService = new HotelService();
         this.running = true;
     }
 
@@ -181,11 +186,7 @@ public class MainMenu {
     }
 
     // Updated method for client-specific functionality
-    private void handleListAvailableHotels() {
-        System.out.println("\n=== Hôtels disponibles ===");
-        // TODO: Implement listing only available hotels with room count > 0
-        waitForEnter();
-    }
+
 
     private boolean handleUserChoice(boolean isAdmin) {
         String choice = scanner.nextLine();
@@ -234,24 +235,187 @@ public class MainMenu {
     }
 
     // Placeholder methods - to be implemented with actual functionality
-    private void handleCreateHotel() {
-        System.out.println("Création d'hôtel - À implémenter");
-        waitForEnter();
+private void handleCreateHotel() {
+    MenuHandler.showHotelFormHeader("CRÉATION D'UN NOUVEL HÔTEL");
+
+    try {
+        MenuHandler.showPrompt("Nom de l'hôtel");
+        String name = scanner.nextLine();
+
+        MenuHandler.showPrompt("Adresse");
+        String address = scanner.nextLine();
+
+        int totalRooms = 0;
+        float rating = 0;
+        double price = 0;
+
+        try {
+            MenuHandler.showPrompt("Nombre total de chambres");
+            totalRooms = Integer.parseInt(scanner.nextLine());
+
+            MenuHandler.showPrompt("Note (0-5)");
+            rating = Float.parseFloat(scanner.nextLine());
+
+            MenuHandler.showPrompt("Prix par nuit");
+            price = Double.parseDouble(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            MenuHandler.showError("Format de nombre invalide. Veuillez entrer des nombres valides.");
+            waitForEnter();
+            return;
+        }
+
+        if (rating < 0 || rating > 5) {
+            MenuHandler.showError("La note doit être comprise entre 0 et 5");
+            waitForEnter();
+            return;
+        }
+
+        Hotel newHotel = hotelService.createHotel(name, address, totalRooms, rating, price);
+        if (newHotel != null) {
+            MenuHandler.showSuccess(" Hôtel créé avec succès! ID: " + newHotel.getHotelId());
+        } else {
+            MenuHandler.showError("Impossible de créer l'hôtel. Vérifiez que le nom n'existe pas déjà.");
+        }
+    } catch (Exception e) {
+        MenuHandler.showError("Une erreur est survenue: " + e.getMessage());
     }
+    waitForEnter();
+}
 
     private void handleUpdateHotel() {
-        System.out.println("Modification d'hôtel - À implémenter");
+        MenuHandler.clearScreen();
+        System.out.println(MenuHandler.DOUBLE_BORDER);
+        System.out.println("           MODIFICATION D'UN HÔTEL");
+        System.out.println(MenuHandler.DOUBLE_BORDER);
+
+        // First, list all hotels for reference
+        displayHotelsList();
+
+        MenuHandler.showPrompt("ID de l'hôtel à modifier");
+        String hotelId = scanner.nextLine();
+
+        Hotel hotel = hotelService.getHotelById(hotelId);
+        if (hotel == null) {
+            MenuHandler.showError("Hôtel non trouvé");
+            waitForEnter();
+            return;
+        }
+
+        System.out.println("\nInformations actuelles:");
+        System.out.println("Nom: " + hotel.getName());
+        System.out.println("Adresse: " + hotel.getAddress());
+        System.out.println("Note: " + hotel.getRating());
+        System.out.println("Prix: " + hotel.getPrice());
+
+        MenuHandler.showPrompt("\nNouveau nom (ou Entrée pour garder l'ancien)");
+        String name = scanner.nextLine();
+        name = name.isEmpty() ? hotel.getName() : name;
+
+        MenuHandler.showPrompt("Nouvelle adresse (ou Entrée pour garder l'ancienne)");
+        String address = scanner.nextLine();
+        address = address.isEmpty() ? hotel.getAddress() : address;
+
+        MenuHandler.showPrompt("Nouveau prix (ou Entrée pour garder l'ancien)");
+        String priceStr = scanner.nextLine();
+        double price = priceStr.isEmpty() ? hotel.getPrice() : Double.parseDouble(priceStr);
+
+        MenuHandler.showPrompt("Nouvelle note (0-5) (ou Entrée pour garder l'ancienne)");
+        String ratingStr = scanner.nextLine();
+        float rating = ratingStr.isEmpty() ? hotel.getRating() : Float.parseFloat(ratingStr);
+
+        try {
+            if (hotelService.updateHotel(hotelId, name, address, price, rating)) {
+                MenuHandler.showSuccess(" Hôtel mis à jour avec succès!");
+            } else {
+                MenuHandler.showError("Impossible de mettre à jour l'hôtel");
+            }
+        } catch (NumberFormatException e) {
+            MenuHandler.showError("Format de nombre invalide");
+        }
         waitForEnter();
     }
 
-    private void handleDeleteHotel() {
-        System.out.println("Suppression d'hôtel - À implémenter");
+private void handleDeleteHotel() {
+    MenuHandler.showHotelFormHeader("SUPPRESSION D'UN HÔTEL");
+    displayHotelsList();
+
+    MenuHandler.showPrompt("ID de l'hôtel à supprimer");
+    String hotelId = scanner.nextLine();
+
+    Hotel hotel = hotelService.getHotelById(hotelId);
+    if (hotel == null) {
+        MenuHandler.showError("Hôtel non trouvé");
+        waitForEnter();
+        return;
+    }
+
+    MenuHandler.showPrompt("Êtes-vous sûr de vouloir supprimer l'hôtel '" + hotel.getName() + "' ? (O/N)");
+    String confirmation = scanner.nextLine();
+
+    if (confirmation.equalsIgnoreCase("O")) {
+        if (hotelService.deleteHotel(hotelId)) {
+            MenuHandler.showSuccess(" Hôtel supprimé avec succès!");
+        } else {
+            MenuHandler.showError("Impossible de supprimer l'hôtel. Vérifiez qu'il n'a pas de réservations actives.");
+        }
+    } else {
+        System.out.println("\nSuppression annulée.");
+    }
+    waitForEnter();
+}
+
+private void handleListHotels() {
+    if ("ADMIN".equals(currentUser.getRole())) {
+        MenuHandler.showHotelFormHeader("LISTE DES HÔTELS");
+        displayHotelsList();
+    } else {
+        // For clients, show only available hotels
+        handleListAvailableHotels();
+    }
+    waitForEnter();
+}
+
+    private void handleListAvailableHotels() {
+        MenuHandler.clearScreen();
+        System.out.println(MenuHandler.DOUBLE_BORDER);
+        System.out.println("           HÔTELS DISPONIBLES");
+        System.out.println(MenuHandler.DOUBLE_BORDER);
+
+        List<Hotel> availableHotels = hotelService.getAvailableHotels(1); // At least 1 room available
+        if (availableHotels.isEmpty()) {
+            System.out.println("\nAucun hôtel disponible actuellement.");
+        } else {
+            displayHotelsList(availableHotels);
+        }
         waitForEnter();
     }
 
-    private void handleListHotels() {
-        System.out.println("Liste des hôtels - À implémenter");
-        waitForEnter();
+    // Helper method to display hotels
+    private void displayHotelsList() {
+        displayHotelsList(hotelService.getAllHotels());
+    }
+
+    private void displayHotelsList(List<Hotel> hotels) {
+        if (hotels.isEmpty()) {
+            System.out.println("\nAucun hôtel trouvé.");
+            return;
+        }
+
+        System.out.printf("\n%-36s | %-20s | %-15s | %-8s | %-6s | %s%n",
+                "ID", "NOM", "CHAMBRES DISPO", "PRIX", "NOTE", "ADRESSE");
+        System.out.println("-".repeat(120));
+
+        for (Hotel hotel : hotels) {
+            System.out.printf("%-36s | %-20s | %6d/%-8d | %8.2f€ | %6.1f | %s%n",
+                    hotel.getHotelId(),
+                    hotel.getName(),
+                    hotel.getAvailableRooms(),
+                    hotel.getTotalRooms(),
+                    hotel.getPrice(),
+                    hotel.getRating(),
+                    hotel.getAddress());
+        }
+        System.out.println();
     }
 
     private void handleCreateReservation() {
@@ -298,4 +462,5 @@ public class MainMenu {
         System.out.println("\nAppuyez sur Entrée pour continuer...");
         scanner.nextLine();
     }
+
 }
