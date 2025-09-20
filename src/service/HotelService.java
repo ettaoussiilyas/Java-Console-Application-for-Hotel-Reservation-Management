@@ -103,4 +103,8 @@ public class HotelService {
                rating >= 0 && rating <= 5;
     }
 
+    public boolean checkAvailability(String hotelId, int requestedRooms) {
+        Hotel hotel = hotelRepository.findById(hotelId);
+        return hotel != null && hotel.getAvailableRooms() >= requestedRooms;
+    }
 }

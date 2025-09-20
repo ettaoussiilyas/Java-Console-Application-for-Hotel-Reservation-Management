@@ -425,66 +425,50 @@ private void handleListHotels() {
     }
 
     private void handleCreateReservation() {
-    MenuHandler.showHotelFormHeader("CRÉER UNE RÉSERVATION");
+    MenuHandler.showHotelFormHeader("NOUVELLE RÉSERVATION");
     
-    // Show available hotels
+    // Display available hotels
     List<Hotel> availableHotels = hotelService.getAvailableHotels(1);
     if (availableHotels.isEmpty()) {
-        MenuHandler.showError("Aucun hôtel disponible actuellement");
-        waitForEnter();
+        System.out.println("Aucun hôtel disponible pour réservation.");
         return;
     }
     
     displayHotelsList(availableHotels);
     
-    MenuHandler.showPrompt("ID de l'hôtel choisi");
+    System.out.print("Entrez l'ID de l'hôtel: ");
     String hotelId = scanner.nextLine();
     
-    Hotel hotel = hotelService.getHotelById(hotelId);
-    if (hotel == null || hotel.getAvailableRooms() < 1) {
-        MenuHandler.showError("Hôtel non disponible");
-        waitForEnter();
-        return;
-    }
+    System.out.print("Nombre de nuits: ");
+    int nights = Integer.parseInt(scanner.nextLine());
     
-    try {
-        MenuHandler.showPrompt("Nombre de chambres");
-        int numberOfRooms = Integer.parseInt(scanner.nextLine());
-        
-        if (numberOfRooms > hotel.getAvailableRooms()) {
-            MenuHandler.showError("Nombre de chambres non disponible");
-            return;
-        }
-        
-        MenuHandler.showPrompt("Date d'arrivée (YYYY-MM-DD)");
-        String checkInDate = scanner.nextLine();
-        
-        MenuHandler.showPrompt("Date de départ (YYYY-MM-DD)");
-        String checkOutDate = scanner.nextLine();
-        
-        double totalPrice = hotel.getPrice() * numberOfRooms;
-        
-        Reservation newReservation = reservationService.createReservation(
-            UUID.randomUUID().toString(),
-            hotelId,
-            String.valueOf(currentUser.getId()),
-            checkInDate,
-            checkOutDate,
-            numberOfRooms,
-            totalPrice,
-            "Confirmed"
-        );
-        
-        if (newReservation != null) {
-            hotelService.updateRoomAvailability(hotelId, -numberOfRooms);
-            MenuHandler.showSuccess(" Réservation créée avec succès!");
-        } else {
-            MenuHandler.showError("Impossible de créer la réservation");
-        }
-    } catch (NumberFormatException e) {
-        MenuHandler.showError("Format de nombre invalide");
+    System.out.print("Nombre de chambres: ");
+    int rooms = Integer.parseInt(scanner.nextLine());
+    
+    // Get current date as check-in
+    String checkInDate = java.time.LocalDate.now().toString();
+    // Calculate check-out date
+    String checkOutDate = java.time.LocalDate.now().plusDays(nights).toString();
+    
+    double totalPrice = reservationService.calculateTotalPrice(hotelId, nights, rooms);
+    
+    Reservation reservation = reservationService.createReservation(
+        UUID.randomUUID().toString(),
+        hotelId,
+        currentUser.getId(),
+        checkInDate,
+        checkOutDate,
+        rooms,
+        totalPrice,
+        "Confirmed"
+    );
+    
+    if (reservation != null) {
+        System.out.println("Réservation créée avec succès!");
+        System.out.println("Prix total: " + totalPrice + "€");
+    } else {
+        System.out.println("Erreur lors de la création de la réservation.");
     }
-    waitForEnter();
 }
 
 private void handleCancelReservation() {

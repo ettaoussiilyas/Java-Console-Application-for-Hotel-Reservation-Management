@@ -3,8 +3,13 @@ package service;
 import repository.interfaces.AuthRepository;
 import repository.impl.AuthRepositoryImpl;
 import entity.User;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Date;
 
 public class AuthService {
+    private Map<String, Date> sessionExpirations = new HashMap<>();
+    private static final long SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
     private final AuthRepository authRepository;
 
     public AuthService() {
@@ -17,6 +22,16 @@ public class AuthService {
             return false;
         }
         return authRepository.authenticate(email, password);
+    }
+    
+    public boolean isSessionValid(String email) {
+        Date expiration = sessionExpirations.get(email);
+        if (expiration == null) return false;
+        return new Date().before(expiration);
+    }
+    
+    public void updateSession(String email) {
+        sessionExpirations.put(email, new Date(System.currentTimeMillis() + SESSION_TIMEOUT));
     }
 
     public boolean register(String username, String email, String password, String role) {

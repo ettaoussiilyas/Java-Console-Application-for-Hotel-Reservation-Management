@@ -101,4 +101,15 @@ public class Reservation {
     }
 
 
+    public double getPrice() {
+        return totalPrice;
+    }
+
+    public boolean isValidReservation() {
+        return numberOfRooms > 0 &&
+                checkInDate != null &&
+                checkOutDate != null &&
+                checkInDate.compareTo(checkOutDate) < 0;
+    }
+
 }

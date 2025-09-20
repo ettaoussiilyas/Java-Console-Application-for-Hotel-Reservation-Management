@@ -1,26 +1,26 @@
 package entity;
 
+import java.util.UUID;
+
 public class User {
-    private int id;
+    private String id;  // Changed from int to String to store UUID
     private String username;
     private String email;
     private String password;
     private String role;
 
-    // Counter for generating unique IDs
-    private static int idCounter = 1;
-
     public User(String username, String email, String password, String role) {
-        this.id = idCounter++;
+        this.id = UUID.randomUUID().toString();  // Generate UUID string instead of using counter
         this.username = username;
         this.email = email;
         this.password = password;
         this.role = role;
     }
 
-    public int getId() {
+    public String getId() {  // Updated return type to String
         return this.id;
     }
+
     public String getUsername() {
         return this.username;
     }
@@ -46,4 +46,5 @@ public class User {
         this.role = role;
     }
 
+    // Rest of the class remains the same
 }
