@@ -118,8 +118,7 @@ public class HotelService {
     }
 
     public double calculateTotalPrice(String hotelId, int nights, int numberOfRooms) {
-        HotelService hotelService = new HotelService();
-        Hotel hotel = hotelService.getHotelById(hotelId);
+        Hotel hotel = getHotelById(hotelId);
         if (hotel == null) return 0;
         return hotel.getPrice() * nights * numberOfRooms;
     }

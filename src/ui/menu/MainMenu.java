@@ -150,7 +150,6 @@ public class MainMenu {
 
     private void handleManageReservations() {
         System.out.println("\n=== Gestion des réservations ===");
-        // TODO: Implement reservation management (admin only)
         waitForEnter();
     }
 
@@ -368,7 +367,7 @@ private void handleListHotels() {
         System.out.println("\nListe des hôtels:");
         System.out.println(MenuHandler.DOUBLE_BORDER);
         for (Hotel hotel : hotels) {
-            System.out.printf("ID: %s\nNom: %s\nAdresse: %s\nChambres disponibles: %d/%d\nNote: %.1f\nPrix: %.2f€\n",
+            System.out.printf("ID: %s\nNom: %s\nAdresse: %s\nChambres disponibles: %d/%d\nNote: %.1f\nPrix: %.2fMAD\n",
                     hotel.getHotelId(), hotel.getName(), hotel.getAddress(),
                     hotel.getAvailableRooms(), hotel.getTotalRooms(),
                     hotel.getRating(), hotel.getPrice());
@@ -397,33 +396,29 @@ private void handleListHotels() {
             waitForEnter();
             return;
         }
-
+        System.out.println("DEBUG: Selected hotel price=" + selectedHotel.getPrice());
         MenuHandler.showPrompt("Nombre de nuits");
         int nights = Integer.parseInt(scanner.nextLine());
-
         MenuHandler.showPrompt("Nombre de chambres");
         int numberOfRooms = Integer.parseInt(scanner.nextLine());
-
         if (numberOfRooms > selectedHotel.getAvailableRooms()) {
             MenuHandler.showError("Nombre de chambres non disponible");
             waitForEnter();
             return;
         }
-
         double totalPrice = hotelService.calculateTotalPrice(hotelId, nights, numberOfRooms);
+        System.out.println("DEBUG: Calculated totalPrice=" + totalPrice);
         String reservationId = UUID.randomUUID().toString();
-        String checkInDate = "2025-09-20"; // You might want to add proper date handling
+        String checkInDate = "2025-09-20";
         String checkOutDate = "2025-09-" + (20 + nights);
-
         Reservation reservation = reservationService.createReservation(
                 reservationId, hotelId, currentUser.getId(),
                 checkInDate, checkOutDate, numberOfRooms,
                 totalPrice, "Confirmed"
         );
-
         if (reservation != null) {
             MenuHandler.showSuccess(" Réservation créée avec succès!");
-            System.out.println("Prix total: " + totalPrice + "€");
+//            System.out.println("Prix total: " + totalPrice + "MAD");
         } else {
             MenuHandler.showError("Erreur lors de la création de la réservation");
         }
@@ -496,7 +491,7 @@ private void displayReservationsList(List<Reservation> reservations) {
         Hotel hotel = hotelService.getHotelById(res.getHotelId());
         String hotelName = hotel != null ? hotel.getName() : "N/A";
         
-        System.out.printf("%-36s | %-20s | %-10s | %-10s | %8d | %8.2f€ | %s%n",
+        System.out.printf("%-36s | %-20s | %-10s | %-10s | %8d | %8.2fMAD | %s%n",
                 res.getReservationId(),
                 hotelName,
                 res.getCheckInDate(),
@@ -583,4 +578,3 @@ private void handleChangePassword() {
         scanner.nextLine();
     }
 }
-
