@@ -73,14 +73,23 @@ public class HotelService {
         return hotelRepository.findByRatingGreaterThanEqual(minimumRating);
     }
 
-    public boolean updateRoomAvailability(String hotelId, int change) {
+    /**
+     * Updates the available rooms for a hotel by hotelId.
+     * @param hotelId The ID of the hotel.
+     * @param roomChange Negative to reserve rooms, positive to release rooms.
+     * @return true if update is successful, false otherwise.
+     */
+    public boolean updateRoomAvailability(String hotelId, int roomChange) {
         Hotel hotel = hotelRepository.findById(hotelId);
         if (hotel == null) {
             return false;
         }
-
-        int newCount = hotel.getAvailableRooms() + change;
-        return hotelRepository.updateAvailableRooms(hotelId, newCount);
+        int newAvailableRooms = hotel.getAvailableRooms() + roomChange;
+        if (newAvailableRooms < 0 || newAvailableRooms > hotel.getTotalRooms()) {
+            return false;
+        }
+        hotel.setAvailableRooms(newAvailableRooms);
+        return hotelRepository.updateHotelDetails(hotelId, hotel);
     }
 
     public Hotel getHotelById(String hotelId) {

@@ -57,4 +57,8 @@ public class AuthService {
     public User getCurrentUser(String email) {
         return authRepository.getUserByEmail(email);
     }
+
+    public boolean updateUser(String userId, User updatedUser) {
+        return authRepository.updateUser(userId, updatedUser);
+    }
 }

@@ -42,4 +42,21 @@ public class AuthRepositoryImpl implements AuthRepository {
     public User getUserByEmail(String email) {
         return users.get(email);
     }
+
+    @Override
+    public boolean updateUser(String userId, User updatedUser) {
+        // Find user by ID (search by email or ID)
+        for (Map.Entry<String, User> entry : users.entrySet()) {
+            User user = entry.getValue();
+            if (user.getId().equals(userId)) {
+                users.put(updatedUser.getEmail(), updatedUser);
+                // Remove old email if changed
+                if (!entry.getKey().equals(updatedUser.getEmail())) {
+                    users.remove(entry.getKey());
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 }

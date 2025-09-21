@@ -17,5 +17,11 @@ public interface HotelRepository {
     boolean existsByName(String name);
     
     boolean updateAvailableRooms(String hotelId, int newCount);
-    boolean updateHotelDetails(String hotelId, Hotel updatedHotel);
+    /**
+     * Updates the details of a hotel, including available rooms.
+     * @param hotelId The ID of the hotel to update.
+     * @param updatedHotel The hotel object with updated details.
+     * @return true if update is successful, false otherwise.
+     */
+    boolean updateHotelDetails(String hotelId, entity.Hotel updatedHotel);
 }

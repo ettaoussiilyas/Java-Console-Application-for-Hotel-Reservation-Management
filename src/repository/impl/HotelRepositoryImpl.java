@@ -74,14 +74,10 @@ public class HotelRepositoryImpl implements HotelRepository {
 
     @Override
     public boolean updateHotelDetails(String hotelId, Hotel updatedHotel) {
-        Hotel existingHotel = hotels.get(hotelId);
-        if (existingHotel != null) {
-            existingHotel.setName(updatedHotel.getName());
-            existingHotel.setAddress(updatedHotel.getAddress());
-            existingHotel.setPrice(updatedHotel.getPrice());
-            existingHotel.setRating(updatedHotel.getRating());
-            return true;
+        if (!hotels.containsKey(hotelId)) {
+            return false;
         }
-        return false;
+        hotels.put(hotelId, updatedHotel);
+        return true;
     }
 }

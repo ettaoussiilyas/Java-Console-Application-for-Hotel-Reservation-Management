@@ -7,4 +7,5 @@ public interface AuthRepository {
     boolean register(String username, String email, String password, String role);
     boolean logout(String email);
     User getUserByEmail(String email);
+    boolean updateUser(String userId, entity.User updatedUser);
 }

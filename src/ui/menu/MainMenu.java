@@ -22,7 +22,7 @@ public class MainMenu {
         this.scanner = new Scanner(System.in);
         this.authService = new AuthService();
         this.hotelService = new HotelService();
-        this.reservationService = new ReservationService();
+        this.reservationService = new ReservationService(this.hotelService);
         this.running = true;
     }
 
@@ -77,7 +77,6 @@ public class MainMenu {
     }
 
     private void handleMainChoice() {
-        MenuHandler.showWelcomeMenu();
         String choice = scanner.nextLine();
 
         switch (choice) {
@@ -510,28 +509,33 @@ private void displayReservationsList(List<Reservation> reservations) {
 }
 
     private void handleUpdateProfile() {
-    MenuHandler.showHotelFormHeader("MODIFIER MON PROFIL");
-    
-    MenuHandler.showPrompt("Nouveau nom d'utilisateur (ou Entrée pour garder l'ancien)");
-    String newUsername = scanner.nextLine();
-    
-    MenuHandler.showPrompt("Nouvel email (ou Entrée pour garder l'ancien)");
-    String newEmail = scanner.nextLine();
-    
-    if (!newUsername.trim().isEmpty()) {
-        currentUser.setUsername(newUsername);
-    }
-    
-    if (!newEmail.trim().isEmpty()) {
-        if (newEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            currentUser.setEmail(newEmail);
-            MenuHandler.showSuccess(" Profil mis à jour avec succès!");
-        } else {
-            MenuHandler.showError("Format d'email invalide");
+        MenuHandler.showHotelFormHeader("MODIFIER MON PROFIL");
+        MenuHandler.showPrompt("Nouveau nom d'utilisateur (ou Entrée pour garder l'ancien)");
+        String newUsername = scanner.nextLine();
+        MenuHandler.showPrompt("Nouvel email (ou Entrée pour garder l'ancien)");
+        String newEmail = scanner.nextLine();
+        boolean changed = false;
+        if (!newUsername.trim().isEmpty()) {
+            currentUser.setUsername(newUsername);
+            changed = true;
         }
+        if (!newEmail.trim().isEmpty()) {
+            if (newEmail.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                currentUser.setEmail(newEmail);
+                changed = true;
+            } else {
+                MenuHandler.showError("Format d'email invalide");
+            }
+        }
+        if (changed) {
+            if (authService.updateUser(currentUser.getId(), currentUser)) {
+                MenuHandler.showSuccess(" Profil mis à jour avec succès!");
+            } else {
+                MenuHandler.showError("Erreur lors de la mise à jour du profil");
+            }
+        }
+        waitForEnter();
     }
-    waitForEnter();
-}
 
 private void handleChangePassword() {
     MenuHandler.showHotelFormHeader("CHANGER MOT DE PASSE");
@@ -579,3 +583,4 @@ private void handleChangePassword() {
         scanner.nextLine();
     }
 }
+
