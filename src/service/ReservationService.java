@@ -2,6 +2,7 @@ package service;
 
 import entity.Reservation;
 import entity.Hotel;
+import service.HotelService;
 import repository.interfaces.ReservationRepository;
 import repository.interfaces.HotelRepository;
 import repository.impl.ReservationRepositoryImpl;
@@ -12,19 +13,29 @@ public class ReservationService {
 
 
     private final ReservationRepository reservationRepository;
-
+    private final HotelService hotelService;
     public ReservationService() {
+
         this.reservationRepository = new ReservationRepositoryImpl();
+        this.hotelService = new HotelService();
     }
 
-    public Reservation createReservation(String reservationId, String hotelId, String customerId, String checkInDate, String checkOutDate, int numberOfRooms, double totalPrice, String reservationStatus){
-
-        if(!validateReservationInput(hotelId, customerId, checkInDate, checkOutDate, numberOfRooms)){
+    public Reservation createReservation(String reservationId, String hotelId, String customerId,
+                                         String checkInDate, String checkOutDate, int numberOfRooms, double totalPrice, String reservationStatus) {
+        if (!validateReservationInput(hotelId, customerId, checkInDate, checkOutDate, numberOfRooms)) {
             return null;
         }
-        Reservation newReservation = new Reservation(reservationId, hotelId, customerId, checkInDate, checkOutDate, numberOfRooms, totalPrice, reservationStatus);
+
+        // Check hotel availability and update room count
+        if (!hotelService.updateRoomAvailability(hotelId, -numberOfRooms)) {
+            return null;
+        }
+
+        Reservation newReservation = new Reservation(reservationId, hotelId, customerId,
+                checkInDate, checkOutDate, numberOfRooms, totalPrice, reservationStatus);
         return reservationRepository.save(newReservation);
     }
+
 
     public boolean validateReservationInput(String hotelId, String customerId, String checkInDate, String checkoutDate, int numberOfRooms){
         if(hotelId == null || customerId == null || checkInDate == null || checkoutDate == null || numberOfRooms <=0){
@@ -67,16 +78,19 @@ public class ReservationService {
         return reservationRepository.findByHotelId(hotelId);
     }
 
-    public boolean cancelReservation(String reservationId){
+    public boolean cancelReservation(String reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId);
-        if(reservation == null){
+        if (reservation == null || !reservation.getReservationStatus().equals("Confirmed")) {
             return false;
         }
-        if(!reservation.getReservationStatus().equals("Confirmed")){
+
+        // Return rooms to hotel availability
+        if (!hotelService.updateRoomAvailability(reservation.getHotelId(), reservation.getNumberOfRooms())) {
             return false;
         }
+
         reservation.setReservationStatus("Cancelled");
-        return reservationRepository.updateReservationStatus(reservationId, reservation.getReservationStatus());
+        return reservationRepository.updateReservationStatus(reservationId, "Cancelled");
     }
 
     public List<Reservation> getReservationsByCustomerId(String customerId){

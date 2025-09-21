@@ -28,62 +28,71 @@ public class MainMenu {
 
     public void start() {
         while (running) {
-            MenuHandler.showWelcomeMenu();
-            handleMainChoice();
+            if (currentUser == null) {
+                MenuHandler.showWelcomeMenu();
+                handleMainChoice();
+            } else {
+                handleUserMenu();
+            }
         }
-    }
-
-    private void handleMainChoice() {
-        String choice = scanner.nextLine();
-        switch (choice) {
-            case "1" -> handleRegistration();
-            case "2" -> handleLogin();
-            case "3" -> handleExit();
-            default -> MenuHandler.showError("Option invalide");
-        }
+        scanner.close();
     }
 
     private void handleRegistration() {
         MenuHandler.showRegistrationForm();
-
-        MenuHandler.showPrompt("Nom");
-        String nom = scanner.nextLine();
-
-        MenuHandler.showPrompt("Prénom");
-        String prenom = scanner.nextLine();
-
+        MenuHandler.showPrompt("Nom complet");
+        String fullName = scanner.nextLine();
         MenuHandler.showPrompt("Email");
         String email = scanner.nextLine();
-
         MenuHandler.showPrompt("Mot de passe (min 6 caractères)");
         String password = scanner.nextLine();
-
+        
         MenuHandler.showRoleSelection();
-        String roleChoise = scanner.nextLine();
-        String role = null;
+        String roleChoice = scanner.nextLine();
+        String role = roleChoice.equals("1") ? "CLIENT" : "ADMIN";
 
-        switch (roleChoise) {
+        if (authService.register(fullName, email, password, role)) {
+            MenuHandler.showSuccess(" Inscription réussie!");
+        } else {
+            MenuHandler.showError("Email déjà utilisé ou données invalides");
+        }
+        waitForEnter();
+    }
+
+    private void handleLogin() {
+        MenuHandler.showLoginForm();
+        MenuHandler.showPrompt("Email");
+        String email = scanner.nextLine();
+        MenuHandler.showPrompt("Mot de passe");
+        String password = scanner.nextLine();
+
+        if (authService.login(email, password)) {
+            currentUser = authService.getCurrentUser(email);
+            authService.updateSession(email);
+            MenuHandler.showSuccess(" Connexion réussie!");
+        } else {
+            MenuHandler.showError("Email ou mot de passe incorrect");
+        }
+        waitForEnter();
+    }
+
+    private void handleMainChoice() {
+        MenuHandler.showWelcomeMenu();
+        String choice = scanner.nextLine();
+
+        switch (choice) {
             case "1":
-                role = "CLIENT";
+                handleRegistration();
                 break;
             case "2":
-                role = "ADMIN";
+                handleLogin();
+                break;
+            case "3":
+                handleExit();
                 break;
             default:
                 MenuHandler.showError("Choix invalide");
         }
-
-        // Validation
-        if (!validateRegistrationInput(nom, prenom, email, password)) {
-            return;
-        }
-
-        if (authService.register(nom + " " + prenom, email, password, role)) {
-            MenuHandler.showSuccess("Inscription réussie!");
-        } else {
-            MenuHandler.showError("Email déjà utilisé ou invalide");
-        }
-        waitForEnter();
     }
 
     private boolean validateRegistrationInput(String nom, String prenom, String email, String password) {
@@ -102,79 +111,34 @@ public class MainMenu {
         return true;
     }
 
-    private void handleLogin() {
-        MenuHandler.showLoginForm();
-
-        MenuHandler.showPrompt("Email");
-        String email = scanner.nextLine();
-
-        MenuHandler.showPrompt("Mot de passe");
-        String password = scanner.nextLine();
-
-        if (authService.login(email, password)) {
-            currentUser = authService.getCurrentUser(email);
-            handleUserMenu();
-        } else {
-            MenuHandler.showError("Email ou mot de passe incorrect");
-            waitForEnter();
-        }
-    }
-
     private void handleUserMenu() {
-        boolean userMenuRunning = true;
-        while (userMenuRunning && running) {
+        while (running && currentUser != null) {
             if ("ADMIN".equals(currentUser.getRole())) {
                 MenuHandler.showAdminMenu(currentUser.getUsername());
-                userMenuRunning = handleAdminMenu();
             } else {
                 MenuHandler.showClientMenu(currentUser.getUsername());
-                userMenuRunning = handleClientMenu();
+            }
+
+            String choice = scanner.nextLine();
+            boolean shouldContinue = "ADMIN".equals(currentUser.getRole()) ?
+                    handleAdminChoice(choice) : handleClientChoice(choice);
+
+            if (!shouldContinue) {
+                break;
             }
         }
     }
 
     private boolean handleAdminMenu() {
+        MenuHandler.showAdminMenu(currentUser.getUsername());
         String choice = scanner.nextLine();
-        switch (choice) {
-            case "1" -> handleCreateHotel();
-            case "2" -> handleUpdateHotel();
-            case "3" -> handleDeleteHotel();
-            case "4" -> handleListHotels();
-            case "5" -> handleViewAllReservations();
-            case "6" -> handleManageReservations();
-            case "7" -> handleUpdateProfile();
-            case "8" -> handleChangePassword();
-            case "9" -> {
-                handleLogout();
-                return false;
-            }
-            default -> {
-                MenuHandler.showError("Option invalide");
-                waitForEnter();
-            }
-        }
-        return true;
+        return handleAdminChoice(choice);
     }
 
     private boolean handleClientMenu() {
+        MenuHandler.showClientMenu(currentUser.getUsername());
         String choice = scanner.nextLine();
-        switch (choice) {
-            case "1" -> handleListAvailableHotels();
-            case "2" -> handleCreateReservation();
-            case "3" -> handleCancelReservation();
-            case "4" -> handleReservationHistory();
-            case "5" -> handleUpdateProfile();
-            case "6" -> handleChangePassword();
-            case "7" -> {
-                handleLogout();
-                return false;
-            }
-            default -> {
-                MenuHandler.showError("Option invalide");
-                waitForEnter();
-            }
-        }
-        return true;
+        return handleClientChoice(choice);
     }
 
     // New methods for admin-specific functionality
@@ -205,88 +169,89 @@ public class MainMenu {
 
     private boolean handleAdminChoice(String choice) {
         switch (choice) {
-            case "1" -> handleCreateHotel();
-            case "2" -> handleUpdateHotel();
-            case "3" -> handleDeleteHotel();
-            case "4" -> handleListHotels();
-            case "5" -> handleCreateReservation();
-            case "6" -> handleCancelReservation();
-            case "7" -> handleReservationHistory();
-            case "8" -> handleUpdateProfile();
-            case "9" -> handleChangePassword();
-            case "10" -> {
+            case "1":
+                handleCreateHotel();
+                return true;
+            case "2":
+                handleUpdateHotel();
+                return true;
+            case "3":
+                handleDeleteHotel();
+                return true;
+            case "4":
+                handleListHotels();
+                return true;
+            case "5":
+                handleViewAllReservations();
+                return true;
+            case "6":
+                handleManageReservations();
+                return true;
+            case "7":
+                handleUpdateProfile();
+                return true;
+            case "8":
+                handleChangePassword();
+                return true;
+            case "9":
                 handleLogout();
                 return false;
-            }
-            default -> MenuHandler.showError("Option invalide");
+            default:
+                MenuHandler.showError("Choix invalide");
+                return true;
         }
-        return true;
     }
 
     private boolean handleClientChoice(String choice) {
         switch (choice) {
-            case "1" -> handleListHotels();
-            case "2" -> handleCreateReservation();
-            case "3" -> handleCancelReservation();
-            case "4" -> handleReservationHistory();
-            case "5" -> handleUpdateProfile();
-            case "6" -> handleChangePassword();
-            case "7" -> {
+            case "1":
+                handleListAvailableHotels();
+                return true;
+            case "2":
+                handleCreateReservation();
+                return true;
+            case "3":
+                handleCancelReservation();
+                return true;
+            case "4":
+                handleReservationHistory();
+                return true;
+            case "5":
+                handleUpdateProfile();
+                return true;
+            case "6":
+                handleChangePassword();
+                return true;
+            case "7":
                 handleLogout();
                 return false;
-            }
-            default -> MenuHandler.showError("Option invalide");
+            default:
+                MenuHandler.showError("Choix invalide");
+                return true;
         }
-        return true;
     }
 
-    // Placeholder methods - to be implemented with actual functionality
-private void handleCreateHotel() {
-    MenuHandler.showHotelFormHeader("CRÉATION D'UN NOUVEL HÔTEL");
-
-    try {
-        MenuHandler.showPrompt("Nom de l'hôtel");
+    private void handleCreateHotel() {
+        MenuHandler.showHotelFormHeader("CRÉATION D'HÔTEL");
+        MenuHandler.showPrompt("Nom");
         String name = scanner.nextLine();
-
         MenuHandler.showPrompt("Adresse");
         String address = scanner.nextLine();
+        MenuHandler.showPrompt("Nombre de chambres");
+        int rooms = Integer.parseInt(scanner.nextLine());
+        MenuHandler.showPrompt("Note (0-5)");
+        float rating = Float.parseFloat(scanner.nextLine());
+        MenuHandler.showPrompt("Prix par nuit");
+        double price = Double.parseDouble(scanner.nextLine());
 
-        int totalRooms = 0;
-        float rating = 0;
-        double price = 0;
-
-        try {
-            MenuHandler.showPrompt("Nombre total de chambres");
-            totalRooms = Integer.parseInt(scanner.nextLine());
-
-            MenuHandler.showPrompt("Note (0-5)");
-            rating = Float.parseFloat(scanner.nextLine());
-
-            MenuHandler.showPrompt("Prix par nuit");
-            price = Double.parseDouble(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            MenuHandler.showError("Format de nombre invalide. Veuillez entrer des nombres valides.");
-            waitForEnter();
-            return;
-        }
-
-        if (rating < 0 || rating > 5) {
-            MenuHandler.showError("La note doit être comprise entre 0 et 5");
-            waitForEnter();
-            return;
-        }
-
-        Hotel newHotel = hotelService.createHotel(name, address, totalRooms, rating, price);
-        if (newHotel != null) {
-            MenuHandler.showSuccess(" Hôtel créé avec succès! ID: " + newHotel.getHotelId());
+        Hotel hotel = hotelService.createHotel(name, address, rooms, rating, price);
+        if (hotel != null) {
+            MenuHandler.showSuccess(" Hôtel créé avec succès!");
         } else {
-            MenuHandler.showError("Impossible de créer l'hôtel. Vérifiez que le nom n'existe pas déjà.");
+            MenuHandler.showError("Impossible de créer l'hôtel");
         }
-    } catch (Exception e) {
-        MenuHandler.showError("Une erreur est survenue: " + e.getMessage());
+        waitForEnter();
     }
-    waitForEnter();
-}
 
     private void handleUpdateHotel() {
         MenuHandler.clearScreen();
@@ -371,15 +336,14 @@ private void handleDeleteHotel() {
 }
 
 private void handleListHotels() {
-    if ("ADMIN".equals(currentUser.getRole())) {
-        MenuHandler.showHotelFormHeader("LISTE DES HÔTELS");
-        displayHotelsList();
-    } else {
-        // For clients, show only available hotels
-        handleListAvailableHotels();
+        List<Hotel> hotels = hotelService.getAllHotels();
+        if (hotels.isEmpty()) {
+            MenuHandler.showError("Aucun hôtel disponible");
+        } else {
+            displayHotelsList(hotels);
+        }
+        waitForEnter();
     }
-    waitForEnter();
-}
 
     private void handleListAvailableHotels() {
         MenuHandler.clearScreen();
@@ -402,74 +366,70 @@ private void handleListHotels() {
     }
 
     private void displayHotelsList(List<Hotel> hotels) {
-        if (hotels.isEmpty()) {
-            System.out.println("\nAucun hôtel trouvé.");
-            return;
-        }
-
-        System.out.printf("\n%-36s | %-20s | %-15s | %-8s | %-6s | %s%n",
-                "ID", "NOM", "CHAMBRES DISPO", "PRIX", "NOTE", "ADRESSE");
-        System.out.println("-".repeat(120));
-
+        System.out.println("\nListe des hôtels:");
+        System.out.println(MenuHandler.DOUBLE_BORDER);
         for (Hotel hotel : hotels) {
-            System.out.printf("%-36s | %-20s | %6d/%-8d | %8.2f€ | %6.1f | %s%n",
-                    hotel.getHotelId(),
-                    hotel.getName(),
-                    hotel.getAvailableRooms(),
-                    hotel.getTotalRooms(),
-                    hotel.getPrice(),
-                    hotel.getRating(),
-                    hotel.getAddress());
+            System.out.printf("ID: %s\nNom: %s\nAdresse: %s\nChambres disponibles: %d/%d\nNote: %.1f\nPrix: %.2f€\n",
+                    hotel.getHotelId(), hotel.getName(), hotel.getAddress(),
+                    hotel.getAvailableRooms(), hotel.getTotalRooms(),
+                    hotel.getRating(), hotel.getPrice());
+            System.out.println(MenuHandler.MENU_BORDER);
         }
-        System.out.println();
     }
 
     private void handleCreateReservation() {
-    MenuHandler.showHotelFormHeader("NOUVELLE RÉSERVATION");
-    
-    // Display available hotels
-    List<Hotel> availableHotels = hotelService.getAvailableHotels(1);
-    if (availableHotels.isEmpty()) {
-        System.out.println("Aucun hôtel disponible pour réservation.");
-        return;
+        MenuHandler.showHotelFormHeader("NOUVELLE RÉSERVATION");
+
+        List<Hotel> hotels = hotelService.getAllHotels();
+        if (hotels.isEmpty()) {
+            MenuHandler.showError("Aucun hôtel disponible");
+            waitForEnter();
+            return;
+        }
+
+        displayHotelsList(hotels);
+
+        MenuHandler.showPrompt("Entrez l'ID de l'hôtel");
+        String hotelId = scanner.nextLine();
+
+        Hotel selectedHotel = hotelService.getHotelById(hotelId);
+        if (selectedHotel == null) {
+            MenuHandler.showError("Hôtel non trouvé");
+            waitForEnter();
+            return;
+        }
+
+        MenuHandler.showPrompt("Nombre de nuits");
+        int nights = Integer.parseInt(scanner.nextLine());
+
+        MenuHandler.showPrompt("Nombre de chambres");
+        int numberOfRooms = Integer.parseInt(scanner.nextLine());
+
+        if (numberOfRooms > selectedHotel.getAvailableRooms()) {
+            MenuHandler.showError("Nombre de chambres non disponible");
+            waitForEnter();
+            return;
+        }
+
+        double totalPrice = hotelService.calculateTotalPrice(hotelId, nights, numberOfRooms);
+        String reservationId = UUID.randomUUID().toString();
+        String checkInDate = "2025-09-20"; // You might want to add proper date handling
+        String checkOutDate = "2025-09-" + (20 + nights);
+
+        Reservation reservation = reservationService.createReservation(
+                reservationId, hotelId, currentUser.getId(),
+                checkInDate, checkOutDate, numberOfRooms,
+                totalPrice, "Confirmed"
+        );
+
+        if (reservation != null) {
+            MenuHandler.showSuccess(" Réservation créée avec succès!");
+            System.out.println("Prix total: " + totalPrice + "€");
+        } else {
+            MenuHandler.showError("Erreur lors de la création de la réservation");
+        }
+        waitForEnter();
     }
-    
-    displayHotelsList(availableHotels);
-    
-    System.out.print("Entrez l'ID de l'hôtel: ");
-    String hotelId = scanner.nextLine();
-    
-    System.out.print("Nombre de nuits: ");
-    int nights = Integer.parseInt(scanner.nextLine());
-    
-    System.out.print("Nombre de chambres: ");
-    int rooms = Integer.parseInt(scanner.nextLine());
-    
-    // Get current date as check-in
-    String checkInDate = java.time.LocalDate.now().toString();
-    // Calculate check-out date
-    String checkOutDate = java.time.LocalDate.now().plusDays(nights).toString();
-    
-    double totalPrice = reservationService.calculateTotalPrice(hotelId, nights, rooms);
-    
-    Reservation reservation = reservationService.createReservation(
-        UUID.randomUUID().toString(),
-        hotelId,
-        currentUser.getId(),
-        checkInDate,
-        checkOutDate,
-        rooms,
-        totalPrice,
-        "Confirmed"
-    );
-    
-    if (reservation != null) {
-        System.out.println("Réservation créée avec succès!");
-        System.out.println("Prix total: " + totalPrice + "€");
-    } else {
-        System.out.println("Erreur lors de la création de la réservation.");
-    }
-}
 
 private void handleCancelReservation() {
     MenuHandler.showHotelFormHeader("ANNULER UNE RÉSERVATION");
@@ -602,7 +562,7 @@ private void handleChangePassword() {
     private void handleLogout() {
         authService.logout(currentUser.getEmail());
         currentUser = null;
-        MenuHandler.showSuccess("Déconnexion réussie");
+        MenuHandler.showSuccess(" Déconnexion réussie");
         waitForEnter();
     }
 
@@ -610,7 +570,7 @@ private void handleChangePassword() {
         if (currentUser != null) {
             handleLogout();
         }
-        MenuHandler.showSuccess("Au revoir!");
+        MenuHandler.showSuccess(" Au revoir!");
         running = false;
     }
 
@@ -618,5 +578,4 @@ private void handleChangePassword() {
         System.out.println("\nAppuyez sur Entrée pour continuer...");
         scanner.nextLine();
     }
-
 }

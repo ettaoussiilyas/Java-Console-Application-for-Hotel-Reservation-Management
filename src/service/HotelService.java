@@ -107,4 +107,11 @@ public class HotelService {
         Hotel hotel = hotelRepository.findById(hotelId);
         return hotel != null && hotel.getAvailableRooms() >= requestedRooms;
     }
+
+    public double calculateTotalPrice(String hotelId, int nights, int numberOfRooms) {
+        HotelService hotelService = new HotelService();
+        Hotel hotel = hotelService.getHotelById(hotelId);
+        if (hotel == null) return 0;
+        return hotel.getPrice() * nights * numberOfRooms;
+    }
 }

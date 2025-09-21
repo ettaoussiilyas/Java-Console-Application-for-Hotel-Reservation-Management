@@ -13,16 +13,17 @@ public class Reservation {
     private double totalPrice;
     private String reservationStatus;
 
-    public Reservation(String reservationId, String hotelId, String customerId, String checkInDate, String checkOutDate, int numberOfRooms, double totalPrice, String reservationStatus) {
-        this.reservationId = UUID.randomUUID().toString();
-        this.hotelId = hotelId;
-        this.customerId = customerId;
-        this.checkInDate = checkInDate;
-        this.checkOutDate = checkOutDate;
-        this.numberOfRooms = numberOfRooms;
-        this.totalPrice = totalPrice;
-        this.reservationStatus = reservationStatus;
-    }
+    public Reservation(String reservationId, String hotelId, String customerId, String checkInDate, 
+                  String checkOutDate, int numberOfRooms, double totalPrice, String reservationStatus) {
+    this.reservationId = reservationId;
+    this.hotelId = hotelId;
+    this.customerId = customerId;
+    this.checkInDate = checkInDate;
+    this.checkOutDate = checkOutDate;
+    this.numberOfRooms = numberOfRooms;
+    this.totalPrice = totalPrice;
+    this.reservationStatus = reservationStatus;
+}
 
     public Reservation(Reservation other) {
         this.reservationId = other.reservationId;
